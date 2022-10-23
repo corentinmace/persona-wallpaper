@@ -10,13 +10,25 @@ import win32api, win32con, win32gui
 from datetime import *
 from screeninfo import get_monitors, Monitor
 
-# API KEY : b03e11fb78b499fc7bd029dc4a90a701
-
 dir = "F:\\Projets\\persona-wallpaper"
 os.chdir(dir)
 
 HOUR = datetime.now().hour
 DAY = str(datetime.now().day)
+
+def getDayOrNight(hour):
+	if hour >= 7 and hour < 19:
+		return "day"
+	else:
+		return "night"
+
+def getMaxHeight(heights):
+	maxHeight = 0
+	for height in heights:
+		if height > maxHeight:
+			maxHeight = height
+
+	return maxHeight
 
 def getTotalWidth(widths):
 	# Get total width of the image
@@ -27,6 +39,9 @@ def getTotalWidth(widths):
 	
 	return total_width
 
+def getDayOfTheWeek():
+	return datetime.now().strftime("%a").lower()
+
 def createDayImage(day):
 	# Define every numbers of the day date
 	numbersList = list(DAY)
@@ -36,8 +51,8 @@ def createDayImage(day):
 
 	images = [Image.open(x) for x in imagesDir]
 	widths, heights = zip(*(i.size for i in images))
-	
-	date_image = Image.new('RGBA', (getTotalWidth(widths), heights[0]))
+
+	date_image = Image.new('RGBA', (getTotalWidth(widths), getMaxHeight(heights)))
 
 	actualWidth = 0
 	for i in range(len(images)):
@@ -46,12 +61,10 @@ def createDayImage(day):
 
 	return date_image
 
-
-
-createDayImage(DAY).show()
-
-
-
+def getDayImage():
+	dayImage = dir + "\\images\\days\\" + getDayOrNight(HOUR) + "\\" + getDayOfTheWeek() + ".png"
+	print(dayImage)
+	return Image.open(dayImage)
 
 
 # response = requests.get(
