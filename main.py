@@ -17,12 +17,14 @@ HOUR = datetime.now().hour
 DAY = str(datetime.now().day)
 
 def getDayOrNight(hour):
+	# Returns day or night depending on the hour
 	if hour >= 7 and hour < 19:
 		return "day"
 	else:
 		return "night"
 
 def getMaxHeight(heights):
+	# Return max height of the image
 	maxHeight = 0
 	for height in heights:
 		if height > maxHeight:
@@ -31,7 +33,7 @@ def getMaxHeight(heights):
 	return maxHeight
 
 def getTotalWidth(widths):
-	# Get total width of the image
+	# Return total width of the image
 	total_width = 0
 
 	for width in widths:
@@ -40,11 +42,27 @@ def getTotalWidth(widths):
 	return total_width
 
 def getDayOfTheWeek():
+	# Returns the day of the week (mon, tue, wed, thu, fri, sat, sun)
 	return datetime.now().strftime("%a").lower()
 
-def createDayImage(day):
+def getMeteoFromApi():
+	# Returns the meteo from the api
+	response = requests.get('https://api.openweathermap.org/data/2.5/weather?lat=43.474663&lon=5.167665&appid=b03e11fb78b499fc7bd029dc4a90a701')
+	jsonData = response.json()
+	meteoDescription = jsonData['weather'][0]['description']
+
+	if(meteoDescription == 'few clouds') or (meteoDescription == 'scattered clouds') or (meteoDescription == 'broken clouds'):
+		return 'cloud'
+	elif(meteoDescription == 'shower rain') or (meteoDescription == 'rain') or (meteoDescription == 'thunderstorm') or (meteoDescription == 'mist'):
+		return 'rain'
+	elif(meteoDescription == 'snow'):
+		return 'snow'
+	else:
+		return 'sun'
+
+def createDateImage(day):
 	# Define every numbers of the day date
-	numbersList = list(DAY)
+	numbersList = list(day)
 	imagesDir = []
 	for number in numbersList:
 		imagesDir.append(dir + "\\images\\date\\" + number + ".png")
@@ -62,25 +80,23 @@ def createDayImage(day):
 	return date_image
 
 def getDayImage():
+	# Return the day image depending on the day or the night (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
 	dayImage = dir + "\\images\\days\\" + getDayOrNight(HOUR) + "\\" + getDayOfTheWeek() + ".png"
 	print(dayImage)
 	return Image.open(dayImage)
 
+def getMeteoImage():
+	# Return the meteo image depending on the meteo (sun, rain, snow, cloud)
+	meteoImage = dir + "\\images\\meteo\\" + getMeteoFromApi() + ".png"
+	print(meteoImage)
+	return Image.open(meteoImage)
 
-# response = requests.get(
-# 	'https://api.stormglass.io/v2/weather/point',
-# 	params={
-# 		'lat': 43.497,
-# 		'lng': 5.12,
-# 		'params': ','.join(['airTemperature']),
-# 		'start': now,  # Convert to UTC timestamp
-# 		'end': now  # Convert to UTC timestamp
-# 	},
-# 	headers={
-# 		'Authorization': '1fce8498-5218-11ed-92e6-0242ac130002-1fce84f2-5218-11ed-92e6-0242ac130002'
-# 	}
-# )
-#print(response.content)
+def getBackground():
+	# Return the background image depending on the day or the night
+	backgroundImage = dir + "\\images\\background\\" + getDayOrNight(HOUR) + ".png"
+	print(backgroundImage)
+	return Image.open(backgroundImage)
+
 
 # Function to actually set the wallpaper as tiled image
 # > We will set background as a single image (which is 2 images merged)
