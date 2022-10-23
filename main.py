@@ -10,11 +10,13 @@ import win32api, win32con, win32gui
 from datetime import *
 from screeninfo import get_monitors, Monitor
 
-dir = "F:\\Projets\\persona-wallpaper"
+dir = "C:\\persona-wallpaper"
 os.chdir(dir)
 
 HOUR = datetime.now().hour
 DAY = str(datetime.now().day)
+MONTH = str(datetime.now().month)
+
 
 def getDayOrNight(hour):
 	# Returns day or night depending on the hour
@@ -22,6 +24,7 @@ def getDayOrNight(hour):
 		return "day"
 	else:
 		return "night"
+
 
 def getMaxHeight(heights):
 	# Return max height of the image
@@ -32,6 +35,7 @@ def getMaxHeight(heights):
 
 	return maxHeight
 
+
 def getTotalWidth(widths):
 	# Return total width of the image
 	total_width = 0
@@ -41,9 +45,15 @@ def getTotalWidth(widths):
 	
 	return total_width
 
+
 def getDayOfTheWeek():
 	# Returns the day of the week (mon, tue, wed, thu, fri, sat, sun)
 	return datetime.now().strftime("%a").lower()
+
+
+def getMonth():
+	return datetime.now().strftime("%b").lower()
+
 
 def getMeteoFromApi():
 	# Returns the meteo from the api
@@ -60,6 +70,7 @@ def getMeteoFromApi():
 	else:
 		return 'sun'
 
+
 def createDateImage(day):
 	# Define every numbers of the day date
 	numbersList = list(day)
@@ -75,27 +86,49 @@ def createDateImage(day):
 	actualWidth = 0
 	for i in range(len(images)):
 		date_image.paste(images[i], (actualWidth, 0))
-		actualWidth += widths[i]
+		actualWidth += widths[i] - 10
 
 	return date_image
+
 
 def getDayImage():
 	# Return the day image depending on the day or the night (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
 	dayImage = dir + "\\images\\days\\" + getDayOrNight(HOUR) + "\\" + getDayOfTheWeek() + ".png"
-	print(dayImage)
 	return Image.open(dayImage)
+
+
+def getMonthImage():
+	# Return the month image depending on the month (january, february, march, april, may, june, july, august, september, october, november, december)
+	monthImage = dir + "\\images\\months\\" + getMonth() + ".png"
+	return Image.open(monthImage)
+
 
 def getMeteoImage():
 	# Return the meteo image depending on the meteo (sun, rain, snow, cloud)
 	meteoImage = dir + "\\images\\meteo\\" + getMeteoFromApi() + ".png"
-	print(meteoImage)
 	return Image.open(meteoImage)
+
 
 def getBackground():
 	# Return the background image depending on the day or the night
 	backgroundImage = dir + "\\images\\background\\" + getDayOrNight(HOUR) + ".png"
-	print(backgroundImage)
 	return Image.open(backgroundImage)
+
+
+def createWallpaper():
+	background = getBackground()
+	background.convert('RGBA')
+	day = getDayImage()
+	date = createDateImage(DAY)
+	month = getMonthImage()
+	meteo = getMeteoImage()
+
+	background.paste(month, (30, 30), month)
+	background.paste(meteo, (230, 30), meteo)
+	background.paste(date, (110, 25), date)
+	background.paste(day, (110, 100), day)
+
+	background.save("final.png", quality=100, subsampling=0)
 
 
 # Function to actually set the wallpaper as tiled image
@@ -107,3 +140,7 @@ def setWallpaper(path):
     win32gui.SystemParametersInfo(win32con.SPI_SETDESKWALLPAPER, path, 1+2)
 
 # ================================================================ #
+
+
+createWallpaper()
+setWallpaper(dir + "\\final.png")
