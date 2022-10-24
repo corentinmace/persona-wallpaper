@@ -86,7 +86,7 @@ def createDateImage(day):
 	actualWidth = 0
 	for i in range(len(images)):
 		date_image.paste(images[i], (actualWidth, 0))
-		actualWidth += widths[i] - 10
+		actualWidth += widths[i]
 
 	return date_image
 
