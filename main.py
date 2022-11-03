@@ -123,10 +123,12 @@ def createWallpaper():
 	month = getMonthImage()
 	meteo = getMeteoImage()
 
-	background.paste(month, (30, 30), month)
-	background.paste(meteo, (230, 30), meteo)
-	background.paste(date, (110, 25), date)
-	background.paste(day, (110, 100), day)
+	startingPoint = 30
+
+	background.paste(month, (startingPoint, startingPoint), month)
+	background.paste(meteo, (month.width + date.width, 30), meteo)
+	background.paste(date, (startingPoint + month.width - 20, 25), date)
+	background.paste(day, (round((startingPoint + month.width + date.width + meteo.width) / 4), 100), day)
 
 	background.save("final.png", quality=100, subsampling=0)
 
