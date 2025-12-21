@@ -57,13 +57,13 @@ def getMonth():
 
 def getMeteoFromApi():
 	# Returns the meteo from the api
-	response = requests.get('https://api.openweathermap.org/data/2.5/weather?lat=43.474663&lon=5.167665&appid=b03e11fb78b499fc7bd029dc4a90a701')
+	response = requests.get('https://api.openweathermap.org/data/2.5/weather?lat=43.4519&lon=4.9850&appid=b03e11fb78b499fc7bd029dc4a90a701')
 	jsonData = response.json()
 	meteoDescription = jsonData['weather'][0]['description']
 
-	if(meteoDescription == 'few clouds') or (meteoDescription == 'scattered clouds') or (meteoDescription == 'broken clouds'):
+	if('clouds' in meteoDescription):
 		return 'cloud'
-	elif(meteoDescription == 'shower rain') or (meteoDescription == 'rain') or (meteoDescription == 'thunderstorm') or (meteoDescription == 'mist'):
+	elif(meteoDescription == 'thunderstorm') or (meteoDescription == 'mist') or 'rain' in meteoDescription:
 		return 'rain'
 	elif(meteoDescription == 'snow'):
 		return 'snow'
