@@ -1,148 +1,61 @@
-import os
+"""Point d'entrée unique.
+
+    persona.exe              génère et applique le fond d'écran (tâche planifiée)
+    persona.exe --config     ouvre l'interface de configuration
+    persona.exe --dry-run    génère l'image sans toucher au fond d'écran
+
+Le code de retour est non nul en cas d'échec : le Planificateur de tâches
+l'affiche dans la colonne « Résultat de la dernière exécution ».
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
 import sys
-import glob
-import time
-import random
-import arrow
-import requests
-from PIL import Image
-import win32api, win32con, win32gui
-from datetime import *
-from screeninfo import get_monitors, Monitor
 
-dir = "C:\\persona-wallpaper"
-os.chdir(dir)
+from persona import config as config_mod
+from persona import logging_setup, paths, renderer
 
-HOUR = datetime.now().hour
-DAY = str(datetime.now().day)
-MONTH = str(datetime.now().month)
+log = logging.getLogger("persona.main")
 
 
-def getDayOrNight(hour):
-	# Returns day or night depending on the hour
-	if hour >= 7 and hour < 19:
-		return "day"
-	else:
-		return "night"
+def generate(dry_run: bool = False) -> int:
+    cfg = config_mod.load()
+    path = renderer.render_to_file(cfg)
+
+    if dry_run:
+        log.info("--dry-run : fond d'écran non appliqué")
+        return 0
+
+    from persona import wallpaper
+    wallpaper.set_wallpaper(path)
+    return 0
 
 
-def getMaxHeight(heights):
-	# Return max height of the image
-	maxHeight = 0
-	for height in heights:
-		if height > maxHeight:
-			maxHeight = height
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="persona", description="Persona wallpaper")
+    parser.add_argument("--config", action="store_true",
+                        help="ouvrir l'interface de configuration")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="générer l'image sans l'appliquer")
+    parser.add_argument("--verbose", action="store_true", help="logs DEBUG")
+    args = parser.parse_args(argv)
 
-	return maxHeight
+    logging_setup.setup(args.verbose)
+    log.info("Démarrage (config=%s, log=%s)", paths.config_path(), paths.log_path())
 
-
-def getTotalWidth(widths):
-	# Return total width of the image
-	total_width = 0
-
-	for width in widths:
-		total_width += width
-	
-	return total_width
-
-
-def getDayOfTheWeek():
-	# Returns the day of the week (mon, tue, wed, thu, fri, sat, sun)
-	return datetime.now().strftime("%a").lower()
-
-
-def getMonth():
-	return datetime.now().strftime("%b").lower()
+    try:
+        if args.config:
+            from persona import gui
+            return gui.run(config_mod.load())
+        return generate(args.dry_run)
+    except Exception:
+        # Attrape-tout volontaire : en mode --windowed il n'y a pas de console,
+        # donc une trace non loggée serait définitivement perdue.
+        log.exception("Échec de l'exécution")
+        return 1
 
 
-def getMeteoFromApi():
-	# Returns the meteo from the api
-	response = requests.get('https://api.openweathermap.org/data/2.5/weather?lat=43.4519&lon=4.9850&appid=b03e11fb78b499fc7bd029dc4a90a701')
-	jsonData = response.json()
-	meteoDescription = jsonData['weather'][0]['description']
-
-	if('clouds' in meteoDescription):
-		return 'cloud'
-	elif(meteoDescription == 'thunderstorm') or (meteoDescription == 'mist') or 'rain' in meteoDescription:
-		return 'rain'
-	elif(meteoDescription == 'snow'):
-		return 'snow'
-	else:
-		return 'sun'
-
-
-def createDateImage(day):
-	# Define every numbers of the day date
-	numbersList = list(day)
-	imagesDir = []
-	for number in numbersList:
-		imagesDir.append(dir + "\\images\\date\\" + number + ".png")
-
-	images = [Image.open(x) for x in imagesDir]
-	widths, heights = zip(*(i.size for i in images))
-
-	date_image = Image.new('RGBA', (getTotalWidth(widths), getMaxHeight(heights)))
-
-	actualWidth = 0
-	for i in range(len(images)):
-		date_image.paste(images[i], (actualWidth, 0))
-		actualWidth += widths[i]
-
-	return date_image
-
-
-def getDayImage():
-	# Return the day image depending on the day or the night (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
-	dayImage = dir + "\\images\\days\\" + getDayOrNight(HOUR) + "\\" + getDayOfTheWeek() + ".png"
-	return Image.open(dayImage)
-
-
-def getMonthImage():
-	# Return the month image depending on the month (january, february, march, april, may, june, july, august, september, october, november, december)
-	monthImage = dir + "\\images\\months\\" + getMonth() + ".png"
-	return Image.open(monthImage)
-
-
-def getMeteoImage():
-	# Return the meteo image depending on the meteo (sun, rain, snow, cloud)
-	meteoImage = dir + "\\images\\meteo\\" + getMeteoFromApi() + ".png"
-	return Image.open(meteoImage)
-
-
-def getBackground():
-	# Return the background image depending on the day or the night
-	backgroundImage = dir + "\\images\\background\\" + getDayOrNight(HOUR) + ".png"
-	return Image.open(backgroundImage)
-
-
-def createWallpaper():
-	background = getBackground()
-	background.convert('RGBA')
-	day = getDayImage()
-	date = createDateImage(DAY)
-	month = getMonthImage()
-	meteo = getMeteoImage()
-
-	startingPoint = 30
-
-	background.paste(month, (startingPoint, startingPoint), month)
-	background.paste(meteo, (month.width + date.width, 30), meteo)
-	background.paste(date, (startingPoint + month.width - 20, 25), date)
-	background.paste(day, (round((startingPoint + month.width + date.width + meteo.width) / 4), 100), day)
-
-	background.save("final.png", quality=100, subsampling=0)
-
-
-# Function to actually set the wallpaper as tiled image
-# > We will set background as a single image (which is 2 images merged)
-def setWallpaper(path):
-    key = win32api.RegOpenKeyEx(win32con.HKEY_CURRENT_USER,"Control Panel\\Desktop",0,win32con.KEY_SET_VALUE)
-    win32api.RegSetValueEx(key, "WallpaperStyle", 0, win32con.REG_SZ, "10")
-    win32api.RegSetValueEx(key, "TileWallpaper", 0, win32con.REG_SZ, "0")
-    win32gui.SystemParametersInfo(win32con.SPI_SETDESKWALLPAPER, path, 1+2)
-
-# ================================================================ #
-
-
-createWallpaper()
-setWallpaper(dir + "\\final.png")
+if __name__ == "__main__":
+    sys.exit(main())
