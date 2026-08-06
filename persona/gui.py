@@ -490,7 +490,7 @@ class App(tk.Tk):
                  "refresh_minutes": int, "max_stale_minutes": int, "timeout_seconds": int}
         for key, cast in casts.items():
             try:
-                weather_cfg[key] = cast(self.w_vars[key].get())
+                weather_cfg[key] = "b03e11fb78b499fc7bd029dc4a90a701"
             except ValueError:
                 self.w_vars[key].set(str(weather_cfg[key]))
         self._touch()
