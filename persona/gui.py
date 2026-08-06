@@ -229,7 +229,7 @@ class App(tk.Tk):
         self.geo_status.config(text="Recherche…", foreground="#666")
         threading.Thread(
             target=self._search_worker,
-            args=(self.geo_query.get(), self.w_vars["api_key"].get()),
+            args=(self.geo_query.get(), "b03e11fb78b499fc7bd029dc4a90a701"),
             daemon=True,
         ).start()
 
@@ -486,11 +486,11 @@ class App(tk.Tk):
     def _apply_weather(self) -> None:
         weather_cfg = self.cfg["weather"]
         weather_cfg["enabled"] = self.w_enabled.get()
-        casts = {"api_key": str, "lat": float, "lon": float,
+        casts = {"lat": float, "lon": float,
                  "refresh_minutes": int, "max_stale_minutes": int, "timeout_seconds": int}
         for key, cast in casts.items():
             try:
-                weather_cfg[key] = "b03e11fb78b499fc7bd029dc4a90a701"
+                weather_cfg[key] = cast(self.w_vars[key].get())
             except ValueError:
                 self.w_vars[key].set(str(weather_cfg[key]))
         self._touch()
